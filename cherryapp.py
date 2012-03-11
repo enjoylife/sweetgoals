@@ -15,7 +15,6 @@ redis = redis_connect()
 FACEBOOK_ENDPOINT ='https://graph.facebook.com'
 FACEBOOK_ID = '250775514988009'
 FACEBOOK_REDIRECT = 'http://localhost:5000/fbauth'
-FACEBOOKSECRET = '650141692b0c5b9815b1b24c1c620231'
 
 restful_api = API(mongo)
 
