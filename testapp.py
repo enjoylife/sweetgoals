@@ -7,7 +7,7 @@ import simplejson as json
 mongo = mongo_connect('test', extra=True)
 redis = redis_connect()
 
-class TestApp(WebCase):
+class TestAPI(WebCase):
 
     
     @classmethod

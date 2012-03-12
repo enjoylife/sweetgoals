@@ -16,7 +16,6 @@ FACEBOOK_ENDPOINT ='https://graph.facebook.com'
 FACEBOOK_ID = '250775514988009'
 FACEBOOK_REDIRECT = 'http://localhost:5000/fbauth'
 
-restful_api = API(mongo)
 
 def f_login():
     """ First step in login process for Facebook Auth and user info """
@@ -64,18 +63,20 @@ def f_auth():
         session.modified = True
         return redirect(url_for('home'))
 
-################################################################################
-### Cherrypy Custom Tools and Hooks ############################################
-################################################################################
+########################################
+### Cherrypy Custom Tools and Hooks ####
+########################################
 
 def json_handler(*args, **kwargs):
     value = cherrypy.serving.request._json_inner_handler(*args, **kwargs)
     return json_en(value)
 
+restful_api = API(mongo)
 
-json_en = json.JSONEncoder(default=json_util.default).iterencode
 root = Welcome()
 root.api = restful_api
+
+json_en = json.JSONEncoder(default=json_util.default).iterencode
 conf = {
     'global': {
         'server.socket_host': '0.0.0.0',

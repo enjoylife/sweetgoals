@@ -170,19 +170,18 @@ def cache_user(db, userdata, scaffold=False):
     else:
         user = {'id':userdata, 'type':'default'}
 
-################################################################################
-### Classes for Exposed REST Interface #########################################
-################################################################################
+##########################################
+### Classes for Exposed REST Interface ###
+##########################################
 
 # Rember no templates, redirects, just simple json return values
 # mongo.(type)s ** type is always plural
 
 # first case is the object and no identifier -> returns collection
-'/api/user' or '/api/goal'
+# '/api/user' or '/api/goal'
 # second case is a specific object identifier -> returns object specified
-'/api/user/219df93' or '/api/user?uid=219df93' 
-'/api/goal/13213' or '/api/goal/?gid=13213'
-# mongo.users.find_one(user), default=json_util.default)
+# '/api/user/219df93' or '/api/user?uid=219df93' 
+# '/api/goal/13213' or '/api/goal/?gid=13213'
 
 
 class Welcome(object):
@@ -192,7 +191,6 @@ class Welcome(object):
     def default(self, extras='', more=''):
         return 'Hello World plus: %s' % extras, more
     default.exposed = True
-
 
 class Home(object):
     pass
@@ -238,7 +236,7 @@ class User(object):
             return self.find_one(uid, type)
 
     def POST():
-        mid = create(name,'')
+        pass
 
     def PUT():
         pass
@@ -251,7 +249,8 @@ class User(object):
     ##########################################
 
     def create(self, user,type, scaffold=True):
-            """Used to add a new user into a mongo users Collection.
+            """
+            Used to add a new user into a mongo users Collection.
 
             Success: _id of inserted doc.
             Failure: False if mongo write fails.
@@ -302,12 +301,17 @@ class User(object):
             return  self.mongo.users.find_one({'facebook.id': uid})
         elif type == 'default':
             return  self.mongo.users.find_one({'_id': uid})
+        else: return None
 
     def delete_user(username, auth):
         pass
 
     def edit_info(id, new):
         pass
+
+
+
+
 
 class Goal(object):
 
@@ -426,21 +430,15 @@ def merge_group(group1, group2, new):
 ##############################################
 
 def new_award(doc, award, scaffold=True):
-
     """ Used to add a new award into a mongo users Collection as a embedded doc.
-
     Params: 
         doc: query match document
         award: document to add 
         scaffold: Bool, whether to add default scaffold to embedded doc
 
         Success: _id of inserted doc.
-        Failure: False if mongo write fails.
+        Failure: False if mongo write fails."""
 
-    Example of userid query: 
-        doc={'facebook':{
-            'facebook_id': 'id'}
-        } """
 
     try:
         if not scaffold:
