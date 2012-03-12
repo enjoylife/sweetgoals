@@ -327,6 +327,62 @@ class Goal(object):
     def DELETE():
         pass
 
+    ######################################################
+    ### Functions that would munilpulate a goal object ###
+    ######################################################
+
+    def new_goal(self, doc, goal, scaffold=True):
+        """Used to add a new goal into a mongo users Collection as a embedded doc.
+
+        Params: 
+            doc: query match document
+            goal: document to add 
+            scaffold: Bool, whether to add default scaffold to embedded doc
+
+            Success: _id of inserted doc.
+            Failure: False if mongo write fails.
+
+        Example of userid query: 
+            doc={'facebook':{
+                'facebook_id': 'id'}
+                } """
+
+        try:
+            if not scaffold:
+                return mongo.users.update(doc,{"$push": {"goals": goal}},safe=True)
+            else:
+                goal_scaffold = {
+                    'descrip':{
+                            u'who':None,
+                            u'what':None,
+                            'where':None,
+                            u'why':None,
+                            },
+                    u'tags':[
+                        ],
+                    u'motivators':[
+                        ],
+                    u'tasks':[
+                        ],
+                    u'diffuculty':int(0),
+                    u'startDate':datetime.datetime.utcnow(),
+                    u'targetDate':0,
+                    u'votes':int(0),
+                    u'completed':False,
+                }
+                return mongo.users.update(doc,
+                        {"$push": {"goals": goal_scaffold}}
+                        ,safe=True)
+        except OperationFailure:
+            return False
+
+    def delete_goal(id):
+        pass
+
+    def finish_goal(id):
+        pass
+
+
 class Group(object):
 
     def GET():
@@ -354,62 +410,6 @@ class Award(object):
 
     def DELETE():
         pass
-
-
-######################################################
-### Functions that would munilpulate a goal object ###
-######################################################
-
-def new_goal(doc, goal, scaffold=True):
-    """Used to add a new goal into a mongo users Collection as a embedded doc.
-
-    Params: 
-        doc: query match document
-        goal: document to add 
-        scaffold: Bool, whether to add default scaffold to embedded doc
-
-        Success: _id of inserted doc.
-        Failure: False if mongo write fails.
-
-    Example of userid query: 
-        doc={'facebook':{
-            'facebook_id': 'id'}
-            } """
-
-    try:
-        if not scaffold:
-            return mongo.users.update(doc,{"$push": {"goals": goal}},safe=True)
-        else:
-            goal_scaffold = {
-                'descrip':{
-                        u'who':None,
-                        u'what':None,
-                        'where':None,
-                        u'why':None,
-                        },
-                u'tags':[
-                    ],
-                u'motivators':[
-                    ],
-                u'tasks':[
-                    ],
-                u'diffuculty':int(0),
-                u'startDate':datetime.datetime.utcnow(),
-                u'targetDate':0,
-                u'votes':int(0),
-                u'completed':False,
-            }
-            return mongo.users.update(doc,
-                    {"$push": {"goals": goal_scaffold}}
-                    ,safe=True)
-    except OperationFailure:
-        return False
-
-def delete_goal(id):
-    pass
-
-def finish_goal(id):
-    pass
 
 
 ##############################################
