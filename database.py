@@ -149,30 +149,18 @@ class Welcome(object):
 class Home(object):
     pass
 
-class API(object):
-
-    def __init__(self, mongo):
-        self.user = User(mongo)
-        self.group = Group()
-        self.award = Award()
-        self.goal = Goal(mongo)
-
-    def error(self, code,extras=None):
-        
-        if code== -1:
-            reason = ['Server Error', code]
-        elif code == 0:
-            reason == ['Wrong input', code ,extras]
-        elif code == 1:
-            reason = ['Incorrect Permissions', code]
-        return json.dumps({"Error": reason})
-
-        pass
+def error( code,extras=None):
+    
+    if code== -1:
+        reason = ['Server Error', code]
+    elif code == 0:
+        reason == ['Wrong input', code ,extras]
+    elif code == 1:
+        reason = ['Incorrect Permissions', code]
+    return json.dumps({"Error": reason})
 
 
 class User(object):
-    # Could possibley remove all the explict uid varibales
-    #TODO: create a staticmethods  
 
     __slots__ =('mongo','goal','_id', 'type', 'is_alive')
 
@@ -182,6 +170,9 @@ class User(object):
         self.is_alive = True
         self._id = {'_id':uid}
 
+    def __del__(self):
+        # Helpful for returning socket to pool??
+        self.mongo.connection.end_request()
 
     ### Functions needed for a simple user ###
 
@@ -193,9 +184,12 @@ class User(object):
             Success: class with _id populated .
             Failure: False if mongo write fails.
 
-            Id keys, can be either a "googleid" or "facebook_id" if using the
-            scaffold, or you can put whatever into the users collection if scaffold
-            is false. """
+            The id contained in the user can be either a 
+            "googleid" or "facebook id" if using the
+            scaffold, or you can put whatever into the users 
+            collection if scaffold
+            is false.
+            """
             try:
                 if not scaffold:
                     # Important that we have safe write?? 
@@ -236,6 +230,8 @@ class User(object):
 
     @staticmethod
     def find(mongo,  uid, type='default'):
+        """ Returns a populated User with  the correct _id, or None if find
+        fails"""
         # only return the _id for User constructor
         if  type == 'default':
             user = mongo.users.find_one({'_id':uid},{'_id':1})
@@ -249,22 +245,31 @@ class User(object):
 
     @property
     def info(self):
+        """ Class property that gives back user info 
+        TODO: expand on returned user properties 
+        """
         if self.is_alive:
             return self.mongo.users.find_one(self._id, {'str_name':1,
             'int_awardCount':1})
         else: return None
 
+
     def delete(self):
-            # if err msg None remove was a success 
-            if not self.mongo.users.remove(self._id, safe=True)['err']:
-                self.is_alive = False
-                return True
-            else: 
-                return False
+        """ Returns True if sucess , False otherwise
+        TODO: Logging and throw exception?
+        """
+        # if err msg None remove was a success 
+        if not self.mongo.users.remove(self._id, safe=True)['err']:
+            self.is_alive = False
+            return True
+        else: 
+            return False
+
 
     def edit(self,  what_to_change):
         """  what_to_change is a dict of properties and
         their values to change
+        TODO: logging and return error if update fails
         """
         return self.mongo.users.update(self._id ,{"$set": what_to_change }, safe=True)
 
@@ -365,8 +370,6 @@ class Goal(object):
 
     def DELETE():
         pass
-
-
 
 class Group(object):
 

@@ -38,7 +38,6 @@ class TestAPI(WebCase):
         #edit
         self.assertTrue( user.edit({'str_name':'BurgerKing'}) )
         self.assertIn('BurgerKing', str(user.info))
-
         # Remove does it return True? if so sucessful remove.
         self.assertTrue( user.delete() )
         self.assertFalse( user.is_alive)
