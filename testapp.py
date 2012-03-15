@@ -5,7 +5,7 @@ from helpers import testuser
 import simplejson as json
 
 mongo = mongo_connect('test', extra=True)
-redis = redis_connect()
+#redis = redis_connect()
 
 class TestAPI(WebCase):
 
@@ -27,28 +27,30 @@ class TestAPI(WebCase):
         user = User.create(mongo, testuser,'facebook')
         self.assertTrue( user ) 
         self.assertIsInstance(user , User )
-        self.assertIn('str_name', user.info)
+        self.assertIn('str_name', user.info())
 
-        uid = user._id['_id'] 
+        uid = user._id 
 
         usersame = User.find(mongo, uid)
-        self.assertEqual(usersame.info, user.info)
-        self.assertIsInstance(user.info, dict)
+        self.assertEqual(usersame.info(), user.info())
+        self.assertIsInstance(user.info(), dict)
 
         #edit
         self.assertTrue( user.edit({'str_name':'BurgerKing'}) )
-        self.assertIn('BurgerKing', str(user.info))
+        self.assertIn('BurgerKing', str(user.info()))
+        self.assertIn('facebook', str(user.info(['str_type'])))
+
         # Remove does it return True? if so sucessful remove.
         self.assertTrue( user.delete() )
         self.assertFalse( user.is_alive)
-        self.assertFalse( user.info)
+        self.assertFalse( user.info())
         self.assertFalse(User.find(mongo,uid))
 
     def test_mongo_goal(self):
-        # uid = self.user.create(testuser,'facebook')
-        #guid = self.goal.create(uid,{})
-        #self.assertTrue( guid )
         pass
+        user = User.create(mongo, testuser,'facebook')
+        goal = user.add_goal()
+        self.assertTrue(goal._id)
 
 
 

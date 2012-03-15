@@ -114,22 +114,12 @@ def facebook_2nd_leg(code, config):
     # TODO: create User in DB
 
 
-def cache_user(db, userdata, scaffold=False):
-    """ Put  the id of the user into some sort of db
-    """
-    if userdata.get('id',False):
-        user = {'id':userdata['id'],'type':'facebook'}
-    # What are other solutions for state management?
-    # Optimaizing response times?
-    else:
-        user = {'id':userdata, 'type':'default'}
-
 ##########################################
 ### Classes for Exposed REST Interface ###
 ##########################################
 
 # Rember no templates, redirects, just simple json return values
-# mongo.(type)s ** type is always plural
+# mongo.(type)s    *type is always plural
 
 # first case is the object and no identifier -> returns collection
 # '/api/user' or '/api/goal'
@@ -162,13 +152,14 @@ def error( code,extras=None):
 
 class User(object):
 
-    __slots__ =('mongo','goal','_id', 'type', 'is_alive')
+    __slots__ =('mongo','uid','_id', 'type', 'is_alive')
 
-    def __init__(self, mongo, uid, type):
+    def __init__(self, mongo, id, type):
         self.mongo = mongo
         self.type = type
         self.is_alive = True
-        self._id = {'_id':uid}
+        # for use externally
+        self._id = id
 
     def __del__(self):
         # Helpful for returning socket to pool??
@@ -178,103 +169,98 @@ class User(object):
 
     @staticmethod
     def create(mongo, user, type='default', scaffold=True):
-            """
-            Used to add a new user into a mongo users Collection.
+        """
+        Used to add a new user into a mongo users Collection.
 
-            Success: class with _id populated .
-            Failure: False if mongo write fails.
+        Success: class with uid populated .
+        Failure: False if mongo write fails.
 
-            The id contained in the user can be either a 
-            "googleid" or "facebook id" if using the
-            scaffold, or you can put whatever into the users 
-            collection if scaffold
-            is false.
-            """
-            try:
-                if not scaffold:
-                    # Important that we have safe write?? 
-                    # save time without or too risky?
-                    # for for a user profile write?
-                    return User(mongo, mongo.users.insert(user,
-                        safe=True),type)
-                else:
-                    # This is the most basic thing I could think of... 
-                    # Yet I should test the amount of space this small thing takes up,
-                    # Don't want to waste or wait on longer io times 
-                    user_scaffold ={
-                            'str_type': type,
-                            'str_name': user.get('name',None),
-                            'date_joindate': str(datetime.datetime.utcnow()),
-                            'int_awardCount':0,
-                            'int_completedGoals':0,
-                            'int_startedGoals':0,
-                            '_id_goals':[],
-                            '_id_groups':[],
-                            'awards':[],
-                            }
-                    if type != 'default':
-                        user_scaffold['_social_id'] = user.get('id')
-                    if type == 'facebook':
-                        user_scaffold['facebook'] = {
-                                        'location': user.get('location',None),
-                                        'id': user.get('id'),
-                                }
-                    elif type == 'google':
-                        user_scaffold['google'] = {
-                                    'id':user.get('googleid'),
-                                    }
-                    return User(mongo, mongo.users.insert(user_scaffold,
-                        safe=True), type)
-            except OperationFailure, e:
-                return False
+        The id contained in the user can be either a 
+        "googleid" or "facebook id" if using the
+        scaffold, or you can put whatever into the users 
+        collection if scaffold
+        is false.
+        """
+        try:
+            if not scaffold:
+                # Important that we have safe write?? 
+                # save time without or too risky?
+                return User(mongo, mongo.users.insert(user,
+                    safe=True),type)
+            else:
+                # This is the most basic thing I could think of... 
+                # Don't want to waste or wait on longer io times 
+                user_scaffold ={
+                        'str_type': type,
+                        'str_name': user.get('name',None),
+                        'date_joindate': str(datetime.datetime.utcnow()),
+                        'int_awardCount':0,
+                        'int_completedGoals':0,
+                        'int_startedGoals':0,
+                        '_id_goals':[],
+                        '_id_groups':[],
+                        'awards':[],
+                        }
+                if type != 'default':
+                    user_scaffold['_social_id'] = user.get('id')
+                return User(mongo, 
+                       mongo.users.insert(user_scaffold,safe=True), type)
+        except OperationFailure, e:
+            #logging.error()
+            return False
 
     @staticmethod
-    def find(mongo,  uid, type='default'):
-        """ Returns a populated User with  the correct _id, or None if find
+    def find(mongo,  id, type='default'):
+        """ Returns a populated User with  the correct uid, or None if find
         fails"""
-        # only return the _id for User constructor
+        # only return the uid for User constructor
         if  type == 'default':
-            user = mongo.users.find_one({'_id':uid},{'_id':1})
+            user = mongo.users.find_one({'_id':id},{'_id':1})
             if isinstance(user,dict):
                 return User(mongo, user['_id'], type)
-            else: return None
+            else: return None #logging.error()
         else: 
-            user = mongo.users.find_one({'_social_id':uid}, {'_id':1})
+            user = mongo.users.find_one({'_social_id':id}, {'_id':1})
             if isinstance(user,dict):
                 return  User(mongo, user['_id'], type)
+            else: return None #logging.error(
 
-    @property
-    def info(self):
+    def info(self, properties=None):
         """ Class property that gives back user info 
+        Params:
+            properties: List- of properties to return
         TODO: expand on returned user properties 
         """
         if self.is_alive:
-            return self.mongo.users.find_one(self._id, {'str_name':1,
-            'int_awardCount':1})
-        else: return None
-
+            #pymongo already does this
+            #properties = dict(map(lambda x: (x,1), properties))
+            return self.mongo.users.find_one({'_id':self._id}, fields=properties)
+        else: return False
 
     def delete(self):
         """ Returns True if sucess , False otherwise
         TODO: Logging and throw exception?
         """
         # if err msg None remove was a success 
-        if not self.mongo.users.remove(self._id, safe=True)['err']:
+        if not self.mongo.users.remove({'_id':self._id}, safe=True)['err']:
             self.is_alive = False
             return True
         else: 
             return False
-
 
     def edit(self,  what_to_change):
         """  what_to_change is a dict of properties and
         their values to change
         TODO: logging and return error if update fails
         """
-        return self.mongo.users.update(self._id ,{"$set": what_to_change }, safe=True)
+        return self.mongo.users.update({'_id':self._id} ,
+                    {"$set": what_to_change }, safe=True)
 
-    def add_goal(self):
-        pass
+    def add_goal(self, doc=None):
+        """ Returns a Goal object that contains the goal """
+        return Goal.create(self.mongo, self._id,  doc)
+
+
         
     ### Functions needed for a REST Interface ###
 
@@ -289,28 +275,22 @@ class User(object):
         else:
             return self.find_one(uid, type)
 
-    def POST():
-        pass
 
-    def PUT():
-        pass
-
-    def DELETE():
-        pass
 
 class Goal(object):
 
-    __slots__ =('mongo')
+    __slots__ =('mongo', '_id')
     exposed = True
 
-    def __init__(self, mongo):
+    def __init__(self, mongo ,id):
         self.mongo = mongo
+        # for use externally
+        self._id =  id
 
-    ######################################################
     ### Functions that would munilpulate a goal object ###
-    ######################################################
 
-    def create(self, uid, goal, scaffold=True):
+    @staticmethod
+    def create(mongo , oid, goal=None, scaffold=True):
 
         """Used to add a new goal into a mongo goals Collection.
 
@@ -325,10 +305,11 @@ class Goal(object):
          """
         try:
             if not scaffold:
-                return self.mongo.goals.insert(goal,safe=True)
+                goal['_user_id'] = oid
+                return Goal(mongo, mongo.goals.insert(goal, safe=True))
             else:
                 goal_scaffold = {
-                    '_user_id': uid,
+                    '_user_id': oid,
                      ## Array of ancestors
                     u'_id_tasks':[],
                     # Embedded user data ie; name id etc
@@ -344,7 +325,7 @@ class Goal(object):
                     u'int_votes':int(0),
                     u'bool_completed':False,
                 }
-                return self.mongo.goals.insert(goal_scaffold,safe=True)
+                return Goal(mongo, mongo.goals.insert(goal_scaffold,safe=True))
         except OperationFailure:
             return False
 
@@ -354,55 +335,14 @@ class Goal(object):
     def finish(id):
         pass
 
-
-    #############################################
-    ### Functions needed for a REST Interface ###
-    #############################################
-
-    def GET():
-        pass
-    
-    def POST():
-        pass
-
-    def PUT():
-        pass
-
-    def DELETE():
-        pass
-
 class Group(object):
-
-    def GET():
-        pass
-    
-    def POST():
-        pass
-
-    def PUT():
-        pass
-
-    def DELETE():
-        pass
+   pass
 
 class Award(object):
-
-    def GET():
-        pass
-    
-    def POST():
-        pass
-
-    def PUT():
-        pass
-
-    def DELETE():
-        pass
+    pass
 
 
-##############################################
 ### Functions that work with group objects ###
-##############################################
 
 def add_group(group, meta_data):
     pass
@@ -413,20 +353,21 @@ def add_group_memeber(id, user):
 def merge_group(group1, group2, new):
     pass
 
-##############################################
 ### Functions that work with Award objects ###
-##############################################
 
 def new_award(doc, award, scaffold=True):
 
-    """ Used to add a new award into a mongo users Collection as a embedded doc.
-    Params: 
+    """
+    Used to add a new award into a mongo users Collection as a embedded doc.
+
+        Params: 
         doc: query match document
         award: document to add 
         scaffold: Bool, whether to add default scaffold to embedded doc
 
         Success: _id of inserted doc.
-        Failure: False if mongo write fails."""
+        Failure: False if mongo write fails.
+        """
 
 
     try:
