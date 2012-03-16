@@ -14,6 +14,7 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 import redis
 from redis import ConnectionError
 
+
 ideas_for_mongo_db = """
 
 IDEAS FOR USE
@@ -21,7 +22,7 @@ IDEAS FOR USE
 Things to think about:
 a) embed one to many relationships within the one
 b) what needs to be queried the most often
-c) catching typing errors before model insertion
+c) catching typing errors before model insertion (dev side)
 d) indexing over multiple properties (aka shared key)
 
 """
@@ -31,6 +32,9 @@ d) indexing over multiple properties (aka shared key)
 ###########################
 
 def redis_connect():
+    """ 
+    Connect to a Redis instance, and write to stdio if failure. 
+    """
     try:
         r = redis.StrictRedis(host='localhost', port=6379, db=0)
         r.ping()
@@ -40,7 +44,8 @@ def redis_connect():
         sys.exit(1)
 
 def mongo_connect(name,extra=False):
-    """ Connect to a MongoDB database, and write to stdio if failure. 
+    """ 
+    Connect to a MongoDB database, and write to stdio if failure. 
     Params: 
         name: the database name to connect to EX: test
     """
@@ -60,7 +65,8 @@ def mongo_connect(name,extra=False):
         sys.exit(1)
 
 def graph_facebook(query,a_token=None, args={}):
-    """Helper for calling url of facebook graph api.
+    """
+    Helper for calling url of facebook graph api.
 
     Params: 
         query: the string for the specific graph endpoint.
@@ -68,9 +74,8 @@ def graph_facebook(query,a_token=None, args={}):
         args: The query string args 
 
     Success: dict of query response.
-    Failure: False. """
-
-
+    Failure: False. 
+    """
     if a_token:
         s = ("https://graph.facebook.com%s?"% query) + a_token +urlencode(args)
         try:
@@ -88,7 +93,8 @@ def graph_facebook(query,a_token=None, args={}):
 #####################################################
 
 def facebook_2nd_leg(code, config):
-    """Helper to complete Auth dance by using the acess_token needed for
+    """
+    Helper to complete Auth dance by using the acess_token needed for
     querying the facebook graph on a given user's information.
 
     Params:
@@ -96,8 +102,8 @@ def facebook_2nd_leg(code, config):
         config: the flask app.config 
 
     Success: auth_token.  
-    Failure: returns False."""
-
+    Failure: returns False.
+    """
     s = "{0:s}".format(config['FACEBOOK_ENDPOINT']) +\
         "/oauth/access_token?client_id={0:s}".format(config['FACEBOOK_ID']) +\
         "&redirect_uri={0:s}&client_secret={1:s}&code={2:s}".format(
@@ -140,7 +146,9 @@ class Home(object):
     pass
 
 def error( code,extras=None):
-    
+    """
+    Possible error msg's for API?
+    """
     if code== -1:
         reason = ['Server Error', code]
     elif code == 0:
@@ -151,14 +159,27 @@ def error( code,extras=None):
 
 
 class User(object):
+    """ 
 
-    __slots__ =('mongo','uid','_id', 'type', 'is_alive')
+    User Mongo manager
+    
+    TODO:
+    1. create_group and create_Award def's
+    2. __enter__ and __exit__ context managers for easy connection cleanup
+
+    """
+
+    # Think of slots as being the dev api guidlines to follow
+    # These are the only things passed around by models?
+    __slots__ =('mongo','_id', 'type', 'is_alive')
+
 
     def __init__(self, mongo, id, type):
         self.mongo = mongo
         self.type = type
         self.is_alive = True
-        # for use externally
+
+        ### for use externally 
         self._id = id
 
     def __del__(self):
@@ -211,25 +232,27 @@ class User(object):
 
     @staticmethod
     def find(mongo,  id, type='default'):
-        """ Returns a populated User with  the correct uid, or None if find
-        fails"""
+        """
+        Returns a populated User with  the correct uid, or False if find
+        fails
+        """
         # only return the uid for User constructor
         if  type == 'default':
             user = mongo.users.find_one({'_id':id},{'_id':1})
             if isinstance(user,dict):
                 return User(mongo, user['_id'], type)
-            else: return None #logging.error()
+            else: return False #logging.error()
         else: 
             user = mongo.users.find_one({'_social_id':id}, {'_id':1})
             if isinstance(user,dict):
                 return  User(mongo, user['_id'], type)
-            else: return None #logging.error(
+            else: return False #logging.error(
 
     def info(self, properties=None):
-        """ Class property that gives back user info 
+        """ 
+        Class property that gives back user info 
         Params:
-            properties: List- of properties to return
-        TODO: expand on returned user properties 
+            properties: iterable(list) of properties to return
         """
         if self.is_alive:
             #pymongo already does this
@@ -238,18 +261,20 @@ class User(object):
         else: return False
 
     def delete(self):
-        """ Returns True if sucess , False otherwise
+        """
+        Returns True if sucess , False otherwise
         TODO: Logging and throw exception?
         """
-        # if err msg None remove was a success 
-        if not self.mongo.users.remove({'_id':self._id}, safe=True)['err']:
+        # if err msg is None , remove was a success 
+        if  self.mongo.users.remove({'_id':self._id}, safe=True)['err'] is None:
             self.is_alive = False
             return True
         else: 
             return False
 
     def edit(self,  what_to_change):
-        """  what_to_change is a dict of properties and
+        """
+        what_to_change is a dict of properties and
         their values to change
         TODO: logging and return error if update fails
         """
@@ -284,6 +309,7 @@ class Goal(object):
 
     def __init__(self, mongo ,id):
         self.mongo = mongo
+
         # for use externally
         self._id =  id
 
@@ -291,8 +317,8 @@ class Goal(object):
 
     @staticmethod
     def create(mongo , oid, goal=None, scaffold=True):
-
-        """Used to add a new goal into a mongo goals Collection.
+        """
+        Used to add a new goal into a mongo goals Collection.
 
         Params: 
             goal: document to add 
@@ -300,8 +326,6 @@ class Goal(object):
 
             Success: _id of inserted doc.
             Failure: False if mongo write fails.
-
-        
          """
         try:
             if not scaffold:
