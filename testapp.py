@@ -1,11 +1,8 @@
 from cherrypy.test.webtest import WebCase
 import unittest
-from database import mongo_connect, redis_connect, User, Goal
+from database import mongo,  User, Goal
 from helpers import testuser 
 import simplejson as json
-
-mongo = mongo_connect('test', extra=True)
-#redis = redis_connect()
 
 class TestAPI(WebCase):
 
@@ -24,14 +21,14 @@ class TestAPI(WebCase):
 
 
     def test_mongo_user(self):
-        user = User.create(mongo, testuser,'facebook')
+        user = User.create(testuser,'facebook')
         self.assertTrue( user ) 
         self.assertIsInstance(user , User )
         self.assertIn('str_name', user.info())
 
         uid = user._id 
 
-        usersame = User.find(mongo, uid)
+        usersame = User.find(uid)
         self.assertEqual(usersame.info(), user.info())
         self.assertIsInstance(user.info(), dict)
 
@@ -44,11 +41,11 @@ class TestAPI(WebCase):
         self.assertTrue( user.delete() )
         self.assertFalse( user.is_alive)
         self.assertFalse( user.info())
-        self.assertFalse(User.find(mongo,uid))
+        self.assertFalse(User.find(uid))
 
     def test_mongo_goal(self):
         pass
-        user = User.create(mongo, testuser,'facebook')
+        user = User.create( testuser,'facebook')
         goal = user.add_goal()
         self.assertTrue(goal._id)
 

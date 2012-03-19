@@ -133,6 +133,7 @@ def facebook_2nd_leg(code, config):
 # '/api/user/219df93' or '/api/user?uid=219df93' 
 # '/api/goal/13213' or '/api/goal/?gid=13213'
 
+mongo = mongo_connect('test', extra=True)
 
 class Welcome(object):
 
@@ -171,11 +172,10 @@ class User(object):
 
     # Think of slots as being the dev api guidlines to follow
     # These are the only things passed around by models?
-    __slots__ =('mongo','_id', 'type', 'is_alive')
+    __slots__ =('_id', 'type', 'is_alive')
 
 
-    def __init__(self, mongo, id, type):
-        self.mongo = mongo
+    def __init__(self,  id, type):
         self.type = type
         self.is_alive = True
 
@@ -184,12 +184,13 @@ class User(object):
 
     def __del__(self):
         # Helpful for returning socket to pool??
-        self.mongo.connection.end_request()
+        # Or should just use context managers?
+        mongo.connection.end_request()
 
     ### Functions needed for a simple user ###
 
     @staticmethod
-    def create(mongo, user, type='default', scaffold=True):
+    def create(user, type='default', scaffold=True):
         """
         Used to add a new user into a mongo users Collection.
 
@@ -206,7 +207,7 @@ class User(object):
             if not scaffold:
                 # Important that we have safe write?? 
                 # save time without or too risky?
-                return User(mongo, mongo.users.insert(user,
+                return User(mongo.users.insert(user,
                     safe=True),type)
             else:
                 # This is the most basic thing I could think of... 
@@ -224,14 +225,13 @@ class User(object):
                         }
                 if type != 'default':
                     user_scaffold['_social_id'] = user.get('id')
-                return User(mongo, 
-                       mongo.users.insert(user_scaffold,safe=True), type)
+                return User(mongo.users.insert(user_scaffold,safe=True), type)
         except OperationFailure, e:
             #logging.error()
             return False
 
     @staticmethod
-    def find(mongo,  id, type='default'):
+    def find(id, type='default'):
         """
         Returns a populated User with  the correct uid, or False if find
         fails
@@ -240,12 +240,12 @@ class User(object):
         if  type == 'default':
             user = mongo.users.find_one({'_id':id},{'_id':1})
             if isinstance(user,dict):
-                return User(mongo, user['_id'], type)
+                return User(user['_id'], type)
             else: return False #logging.error()
         else: 
             user = mongo.users.find_one({'_social_id':id}, {'_id':1})
             if isinstance(user,dict):
-                return  User(mongo, user['_id'], type)
+                return  User(user['_id'], type)
             else: return False #logging.error(
 
     def info(self, properties=None):
@@ -257,7 +257,7 @@ class User(object):
         if self.is_alive:
             #pymongo already does this
             #properties = dict(map(lambda x: (x,1), properties))
-            return self.mongo.users.find_one({'_id':self._id}, fields=properties)
+            return mongo.users.find_one({'_id':self._id}, fields=properties)
         else: return False
 
     def delete(self):
@@ -266,7 +266,7 @@ class User(object):
         TODO: Logging and throw exception?
         """
         # if err msg is None , remove was a success 
-        if  self.mongo.users.remove({'_id':self._id}, safe=True)['err'] is None:
+        if  mongo.users.remove({'_id':self._id}, safe=True)['err'] is None:
             self.is_alive = False
             return True
         else: 
@@ -278,12 +278,12 @@ class User(object):
         their values to change
         TODO: logging and return error if update fails
         """
-        return self.mongo.users.update({'_id':self._id} ,
+        return mongo.users.update({'_id':self._id} ,
                     {"$set": what_to_change }, safe=True)
 
     def add_goal(self, doc=None):
         """ Returns a Goal object that contains the goal """
-        return Goal.create(self.mongo, self._id,  doc)
+        return Goal.create(self._id,  doc)
 
 
         
@@ -304,11 +304,11 @@ class User(object):
 
 class Goal(object):
 
-    __slots__ =('mongo', '_id')
+    __slots__ =('_id')
     exposed = True
 
-    def __init__(self, mongo ,id):
-        self.mongo = mongo
+    def __init__(self, id):
+        #self.mongo = mongo
 
         # for use externally
         self._id =  id
@@ -316,7 +316,7 @@ class Goal(object):
     ### Functions that would munilpulate a goal object ###
 
     @staticmethod
-    def create(mongo , oid, goal=None, scaffold=True):
+    def create(oid, goal=None, scaffold=True):
         """
         Used to add a new goal into a mongo goals Collection.
 
@@ -330,7 +330,7 @@ class Goal(object):
         try:
             if not scaffold:
                 goal['_user_id'] = oid
-                return Goal(mongo, mongo.goals.insert(goal, safe=True))
+                return Goal(mongo.goals.insert(goal, safe=True))
             else:
                 goal_scaffold = {
                     '_user_id': oid,
@@ -349,7 +349,7 @@ class Goal(object):
                     u'int_votes':int(0),
                     u'bool_completed':False,
                 }
-                return Goal(mongo, mongo.goals.insert(goal_scaffold,safe=True))
+                return Goal(mongo.goals.insert(goal_scaffold,safe=True))
         except OperationFailure:
             return False
 
