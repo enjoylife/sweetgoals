@@ -1,25 +1,6 @@
-from __future__ import unicode_literals
-import datetime
-import sys
-from urllib2 import urlopen, HTTPError
-from urllib import urlencode, quote
-import simplejson as json
-import cherrypy
-
-
-from pymongo import Connection 
-from bson import json_util
-from pymongo.errors import ConnectionFailure, OperationFailure
-
-import redis
-from redis import ConnectionError
-
-
-ideas_for_mongo_db = """
-
-IDEAS FOR USE
-{Collections}= [users, groups, goals, awards]
-Things to think about:
+"""Ideas for use
+{collections}= [users, groups, goals, awards]
+things to think about:
 a) embed one to many relationships within the one
 b) what needs to be queried the most often
 c) catching typing errors before model insertion (dev side)
@@ -27,9 +8,27 @@ d) indexing over multiple properties (aka shared key)
 
 """
 
-###########################
+from __future__ import unicode_literals
+import datetime
+import sys
+from urllib2 import urlopen, HTTPError
+from urllib import urlencode, quote
+
+import simplejson as json
+import cherrypy
+
+from pymongo import Connection 
+from bson import json_util
+from pymongo.errors import ConnectionFailure, OperationFailure
+
+# currently not focusing on this functionality
+#import redis
+#from redis import ConnectionError
+
+
+
+
 ### Generaic Functions  ###
-###########################
 
 def redis_connect():
     """ 
@@ -85,8 +84,6 @@ def graph_facebook(query,a_token=None, args={}):
     else:
         return "NO ACCEsS_TOKEN"
     #TODO:else: get acces_token from db
-
-
 
 #####################################################
 ### Functions needed for logging in a simple user ###
@@ -380,9 +377,8 @@ def merge_group(group1, group2, new):
 ### Functions that work with Award objects ###
 
 def new_award(doc, award, scaffold=True):
-
     """
-    Used to add a new award into a mongo users Collection as a embedded doc.
+        Used to add a new award into a mongo users Collection as a embedded doc.
 
         Params: 
         doc: query match document
