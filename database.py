@@ -32,8 +32,7 @@ d) indexing over multiple properties (aka shared key)
 ###########################
 
 def redis_connect():
-    """ 
-    Connect to a Redis instance, and write to stdio if failure. 
+    """ Connect to a Redis instance, and write to stdio if failure. 
     """
     try:
         r = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -44,8 +43,7 @@ def redis_connect():
         sys.exit(1)
 
 def mongo_connect(name,extra=False):
-    """ 
-    Connect to a MongoDB database, and write to stdio if failure. 
+    """ Connect to a MongoDB database, and write to stdio if failure. 
     Params: 
         name: the database name to connect to EX: test
     """
@@ -65,8 +63,7 @@ def mongo_connect(name,extra=False):
         sys.exit(1)
 
 def graph_facebook(query,a_token=None, args={}):
-    """
-    Helper for calling url of facebook graph api.
+    """ Helper for calling url of facebook graph api.
 
     Params: 
         query: the string for the specific graph endpoint.
@@ -93,8 +90,7 @@ def graph_facebook(query,a_token=None, args={}):
 #####################################################
 
 def facebook_2nd_leg(code, config):
-    """
-    Helper to complete Auth dance by using the acess_token needed for
+    """ Helper to complete Auth dance by using the acess_token needed for
     querying the facebook graph on a given user's information.
 
     Params:
@@ -144,11 +140,13 @@ class Welcome(object):
     default.exposed = True
 
 class Home(object):
-    pass
+    exposed = True
+
+    def GET(self):
+        return {"test": "hello World"}
 
 def error( code,extras=None):
-    """
-    Possible error msg's for API?
+    """ Possible error msg's for API?
     """
     if code== -1:
         reason = ['Server Error', code]
@@ -160,9 +158,7 @@ def error( code,extras=None):
 
 
 class User(object):
-    """ 
-
-    User Mongo manager
+    """ User Mongo manager
     
     TODO:
     1. create_group and create_Award def's
@@ -183,16 +179,16 @@ class User(object):
         self._id = id
 
     def __del__(self):
+        pass
         # Helpful for returning socket to pool??
         # Or should just use context managers?
-        mongo.connection.end_request()
+       # mongo.connection.end_request()
 
     ### Functions needed for a simple user ###
 
     @staticmethod
     def create(user, type='default', scaffold=True):
-        """
-        Used to add a new user into a mongo users Collection.
+        """ Used to add a new user into a mongo users Collection.
 
         Success: class with uid populated .
         Failure: False if mongo write fails.
@@ -232,8 +228,7 @@ class User(object):
 
     @staticmethod
     def find(id, type='default'):
-        """
-        Returns a populated User with  the correct uid, or False if find
+        """ Returns a populated User with the correct uid, or False if find
         fails
         """
         # only return the uid for User constructor
@@ -249,10 +244,9 @@ class User(object):
             else: return False #logging.error(
 
     def info(self, properties=None):
-        """ 
-        Class property that gives back user info 
+        """ Class property that gives back user info 
         Params:
-            properties: iterable(list) of properties to return
+            properties: iterable(optional) of properties to return
         """
         if self.is_alive:
             #pymongo already does this
@@ -261,8 +255,7 @@ class User(object):
         else: return False
 
     def delete(self):
-        """
-        Returns True if sucess , False otherwise
+        """Returns True if sucess , False otherwise
         TODO: Logging and throw exception?
         """
         # if err msg is None , remove was a success 
@@ -273,8 +266,7 @@ class User(object):
             return False
 
     def edit(self,  what_to_change):
-        """
-        what_to_change is a dict of properties and
+        """ what_to_change is a dict of properties and
         their values to change
         TODO: logging and return error if update fails
         """
@@ -317,8 +309,7 @@ class Goal(object):
 
     @staticmethod
     def create(oid, goal=None, scaffold=True):
-        """
-        Used to add a new goal into a mongo goals Collection.
+        """ Used to add a new goal into a mongo goals Collection.
 
         Params: 
             goal: document to add 
@@ -380,18 +371,15 @@ def merge_group(group1, group2, new):
 ### Functions that work with Award objects ###
 
 def new_award(doc, award, scaffold=True):
+    """ Used to add a new award into a mongo users Collection as a embedded doc.
+    Params: 
+    doc: query match document
+    award: document to add 
+    scaffold: Bool, whether to add default scaffold to embedded doc
 
+    Success: _id of inserted doc.
+    Failure: False if mongo write fails.
     """
-    Used to add a new award into a mongo users Collection as a embedded doc.
-
-        Params: 
-        doc: query match document
-        award: document to add 
-        scaffold: Bool, whether to add default scaffold to embedded doc
-
-        Success: _id of inserted doc.
-        Failure: False if mongo write fails.
-        """
 
 
     try:

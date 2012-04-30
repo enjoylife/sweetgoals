@@ -11,7 +11,7 @@ import simplejson as json
 
 os.path.join(os.path.dirname(__file__),'')
 mongo = mongo_connect('test', extra=True)
-redis = redis_connect()
+#redis = redis_connect()
 FACEBOOK_ENDPOINT ='https://graph.facebook.com'
 FACEBOOK_ID = '250775514988009'
 FACEBOOK_REDIRECT = 'http://localhost:5000/fbauth'
@@ -69,14 +69,14 @@ def f_auth():
 
 def json_handler(*args, **kwargs):
     value = cherrypy.serving.request._json_inner_handler(*args, **kwargs)
-    return json_en(value)
+    return json.JSONEncoder(default=json_util.default).iterencode(value)
 
-restful_api = API(mongo)
+#restful_api = API(mongo)
 
 root = Welcome()
-root.api = restful_api
+root.api = Home()
+#root.api = restful_api
 
-json_en = json.JSONEncoder(default=json_util.default).iterencode
 conf = {
     'global': {
         'server.socket_host': '0.0.0.0',

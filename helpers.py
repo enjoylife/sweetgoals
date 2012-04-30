@@ -14,26 +14,22 @@ def gen_stops():
             english_ignore.append(word.strip())
     return frozenset(english_ignore)
 
-def text_processer(document, stops,):
+def ngrams(tokens, MIN_N, MAX_N):
+    n_tokens = len(tokens)
+    for i in xrange(n_tokens):
+        for j in xrange(i+MIN_N, min(n_tokens, i+MAX_N)+1):
+            yield tokens[i:j]
+
+def text_processer(document):
     """ Alot of python magic and helpers in this list comprehension
      If this is one area where a more precise C implementation would be amazing
-     but alot of work compared to this """
-    container = Counter()
-    raw_strings = (document.lower()).split()
-    memo = False
-    for word in raw_strings:
-        if len(word)>=2 and word not in stops:
-            #bi grams
-            if memo:
-                container[tuple((memo,word))]+=1
-            # Add single tokens
-            container[(word)]+=1 
-            # remember for bigram check
-            memo = word
-        else: memo = False
+     but more work."""
+    raw_strings = tuple(document.lower().split())
+    container = Counter(raw_strings)
+    container.update([x for x in ngrams(raw_strings,2,4)])
     return container
 
 
 if __name__ == '__main__':
-    pass
+    print text_processer('This is a test sencence with strings')
 
