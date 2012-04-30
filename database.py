@@ -6,6 +6,16 @@ b) what needs to be queried the most often
 c) catching typing errors before model insertion (dev side)
 d) indexing over multiple properties (aka shared key)
 
+Rember no templates, redirects, just simple json return values
+mongo.(type)s    *type is always plural
+
+first case is the object and no identifier -> returns collection
+'/api/user' or '/api/goal'
+second case is a specific object identifier -> returns object specified
+'/api/user/219df93' or '/api/user?uid=219df93' 
+'/api/goal/13213' or '/api/goal/?gid=13213'
+
+
 """
 
 from __future__ import unicode_literals
@@ -85,9 +95,7 @@ def graph_facebook(query,a_token=None, args={}):
         return "NO ACCEsS_TOKEN"
     #TODO:else: get acces_token from db
 
-#####################################################
 ### Functions needed for logging in a simple user ###
-#####################################################
 
 def facebook_2nd_leg(code, config):
     """
@@ -117,18 +125,7 @@ def facebook_2nd_leg(code, config):
     # TODO: create User in DB
 
 
-##########################################
 ### Classes for Exposed REST Interface ###
-##########################################
-
-# Rember no templates, redirects, just simple json return values
-# mongo.(type)s    *type is always plural
-
-# first case is the object and no identifier -> returns collection
-# '/api/user' or '/api/goal'
-# second case is a specific object identifier -> returns object specified
-# '/api/user/219df93' or '/api/user?uid=219df93' 
-# '/api/goal/13213' or '/api/goal/?gid=13213'
 
 mongo = mongo_connect('test', extra=True)
 
